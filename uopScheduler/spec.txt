@@ -1,0 +1,40 @@
+Specification
+=============
+A micro-operation (uop) scheduler is a microprocessor component.
+
+            ---------------
+write ----->               <----- wrback  
+din   --/-->               <--/-- reg
+ready ----->   Scheduler   
+full  <----                <----- read
+                           --/--> dout
+                           -----> available 
+            ---------------
+
+The scheduler, shown in figure 1, receives a stream of uop instructions
+to be executed and is responsible for delivering each of these to an
+execution unit at the appropriate time.
+The scheduler must hold back some uops until the execution unit signals
+that their operands are available.
+When multiple uops are ready, the scheduler uses a FIFO policy for selection.
+
+Each uop has an opcode, a source register, and a destination register.
+Each uop comes to the scheduler on the din line accompanied by a ready bit,
+which is high exactly when all the instructions it must wait for have already
+been executed.
+In order to enqueue a uop into the scheduler (provided the full line is
+not high), the write line must be high.
+The scheduler should set the line available to high when it contains a
+waiting ready uop.
+When it sees this signal, the execution unit can request a uop on the dout
+lines by setting read to high.
+In the event that there is more than one ready uop, the scheduler provides
+the ready uop which entered it first.
+
+The wrback line from the execution unit is used to signal when the execution
+of an instruction has resulted in the writing of data to a register.
+The index of this register is supplied on the reg lines. This allows the
+scheduler to select any uops it holds which might have been waiting for this
+write to happen.
+When a write-back takes place, any waiting instructions whose source which
+matches reg is tagged as ready for execution.
