@@ -1,0 +1,103 @@
+// AsmL for a micro-op scheduler hardware specification, written by BC Chuan, 2014-01-25
+
+namespace UopScheduler
+
+structure Uop
+  opCode as Integer
+  sReg   as Integer
+  dReg   as Integer
+
+// -------------------------------------------------
+// State Variables
+// -------------------------------------------------
+
+var uopQueue as Map of Integer to Uop = {->}
+var rdyQueue as Map of Integer to Boolean = {->}
+var valQueue as Map of Integer to Boolean = {->}
+var dout     as Uop = Uop(0,0,0)
+var uopTag   as Integer = 0
+
+// -------------------------------------------------
+// Private functions
+// -------------------------------------------------
+
+incrementTag()
+  uopTag := uopTag + 1
+
+findEarliestReadyTag() as Integer
+  return 0 //TO DO!!
+
+// -------------------------------------------------
+// Public functions
+// -------------------------------------------------
+
+IsFull() as Boolean
+  return false //TO DO!!
+
+IsAvailable() as Boolean
+  return exists v in Indices(rdyQueue)
+    where rdyQueue(v) = true and valQueue(v) = true
+
+GetDout() as Uop
+  return dout
+
+Wr(din as Uop, ready as Boolean)
+  if not IsFull()
+    uopQueue(uopTag) := din
+    rdyQueue(uopTag) := ready
+    valQueue(uopTag) := true
+    incrementTag()
+
+Rd()
+  if IsAvailable()
+    let tag = findEarliestReadyTag()
+    valQueue(tag) := false
+    dout := uopQueue(tag)
+
+WrBack(reg as Integer)
+  forall tag in Indices(uopQueue)
+   if uopQueue(tag).sReg = reg and rdyQueue(tag) = false and valQueue(tag) = true
+     rdyQueue(tag) := true
+
+// -------------------------------------------------
+// Main program
+// -------------------------------------------------
+
+Main()
+  step
+    step
+      Wr(Uop(10,0,80), false)
+    step
+      DumpAllInfo()
+  step
+    step
+      Wr(Uop(11,1,81), false)
+    step
+      DumpAllInfo()
+  step
+    step
+      Wr(Uop(12,2,82), false)
+      WrBack(0)
+    step
+      DumpAllInfo()
+  step
+    step
+      Rd()
+    step
+      WriteLine("")
+      WriteLine("dout="+GetDout()+"")
+    step
+      DumpAllInfo()
+  step
+    DumpAllInfo()
+
+DumpAllInfo()
+  WriteLine("")
+  forall tag in Indices(uopQueue)
+    let uop = uopQueue(tag)
+    let rdy = rdyQueue(tag)
+    let val = valQueue(tag)
+    let full = IsFull()
+    let avail = IsAvailable()
+    WriteLine("uop="+uop+" tag="+tag+" rdy="+rdy+" val="+val+" full="+full+" avail="+avail+"")
+
