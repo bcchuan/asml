@@ -7,97 +7,91 @@ structure Uop
   sReg   as Integer
   dReg   as Integer
 
-// -------------------------------------------------
-// State Variables
-// -------------------------------------------------
+class Scheduler
+  var uopQueue as Map of Integer to Uop = {->}
+  var rdyQueue as Map of Integer to Boolean = {->}
+  var valQueue as Map of Integer to Boolean = {->}
+  var dout     as Uop = Uop(0,0,0)
+  var uopTag   as Integer = 0
 
-var uopQueue as Map of Integer to Uop = {->}
-var rdyQueue as Map of Integer to Boolean = {->}
-var valQueue as Map of Integer to Boolean = {->}
-var dout     as Uop = Uop(0,0,0)
-var uopTag   as Integer = 0
+  findEarliestReadyTag() as Integer
+    return the w | w in Keys(uopQueue) where
+             rdyQueue(w) and valQueue(w) and
+             not (exists v in Keys(uopQueue) where
+                    v < w and
+                    rdyQueue(v) and valQueue(v))
 
-// -------------------------------------------------
-// Private functions
-// -------------------------------------------------
+  IsFull() as Boolean
+    return false
 
-incrementTag()
-  uopTag := uopTag + 1
+  IsAvailable() as Boolean
+    return exists v in Keys(rdyQueue)
+      where rdyQueue(v) and valQueue(v)
 
-findEarliestReadyTag() as Integer
-  return 0 //TO DO!!
+  GetDout() as Uop
+    return dout
 
-// -------------------------------------------------
-// Public functions
-// -------------------------------------------------
+  [Action]
+  Wr(din as Uop, ready as Boolean)
+    if not IsFull()
+      uopQueue(uopTag) := din
+      rdyQueue(uopTag) := ready
+      valQueue(uopTag) := true
+      uopTag := uopTag + 1
 
-IsFull() as Boolean
-  return false //TO DO!!
+  [Action]
+  Rd()
+    if IsAvailable()
+      let tag = findEarliestReadyTag()
+      valQueue(tag) := false
+      dout := uopQueue(tag)
 
-IsAvailable() as Boolean
-  return exists v in Indices(rdyQueue)
-    where rdyQueue(v) = true and valQueue(v) = true
+  [Action]
+  WrBack(reg as Integer)
+    forall tag in Keys(uopQueue)
+     if uopQueue(tag).sReg = reg and valQueue(tag) and not rdyQueue(tag)
+       rdyQueue(tag) := true
 
-GetDout() as Uop
-  return dout
+  DumpAllInfo()
+    WriteLine("")
+    forall tag in Keys(uopQueue)
+      let uop = uopQueue(tag)
+      let rdy = rdyQueue(tag)
+      let val = valQueue(tag)
+      let full = IsFull()
+      let avail = IsAvailable()
+      WriteLine("uop="+uop+" tag="+tag+" rdy="+rdy+" val="+val+" full="+full+" avail="+avail+"")
 
-Wr(din as Uop, ready as Boolean)
-  if not IsFull()
-    uopQueue(uopTag) := din
-    rdyQueue(uopTag) := ready
-    valQueue(uopTag) := true
-    incrementTag()
-
-Rd()
-  if IsAvailable()
-    let tag = findEarliestReadyTag()
-    valQueue(tag) := false
-    dout := uopQueue(tag)
-
-WrBack(reg as Integer)
-  forall tag in Indices(uopQueue)
-   if uopQueue(tag).sReg = reg and rdyQueue(tag) = false and valQueue(tag) = true
-     rdyQueue(tag) := true
-
-// -------------------------------------------------
+//
 // Main program
-// -------------------------------------------------
-
+//
 Main()
   step
-    step
-      Wr(Uop(10,0,80), false)
-    step
-      DumpAllInfo()
+    var scheduler = new Scheduler()
   step
     step
-      Wr(Uop(11,1,81), false)
+      scheduler.Wr(Uop(10,0,80), false)
     step
-      DumpAllInfo()
+      scheduler.DumpAllInfo()
   step
     step
-      Wr(Uop(12,2,82), false)
-      WrBack(0)
+      scheduler.Wr(Uop(11,1,81), false)
     step
-      DumpAllInfo()
+      scheduler.DumpAllInfo()
   step
     step
-      Rd()
+      scheduler.Wr(Uop(12,2,82), false)
+      scheduler.WrBack(0)
+    step
+      scheduler.DumpAllInfo()
+  step
+    step
+      scheduler.Rd()
     step
       WriteLine("")
-      WriteLine("dout="+GetDout()+"")
+      WriteLine("dout="+scheduler.GetDout()+"")
     step
-      DumpAllInfo()
+      scheduler.DumpAllInfo()
   step
-    DumpAllInfo()
-
-DumpAllInfo()
-  WriteLine("")
-  forall tag in Indices(uopQueue)
-    let uop = uopQueue(tag)
-    let rdy = rdyQueue(tag)
-    let val = valQueue(tag)
-    let full = IsFull()
-    let avail = IsAvailable()
-    WriteLine("uop="+uop+" tag="+tag+" rdy="+rdy+" val="+val+" full="+full+" avail="+avail+"")
+    scheduler.DumpAllInfo()
 
