@@ -1,0 +1,34 @@
+// AsmL for a micro-op scheduler hardware specification, written by BC Chuan, 2014-01-25
+
+import UopScheduler
+
+Main()
+  step
+    var scheduler = new Scheduler()
+  step
+    step
+      scheduler.Wr(Uop(10,0,80), false)
+    step
+      scheduler.DumpAllInfo()
+  step
+    step
+      scheduler.Wr(Uop(11,1,81), false)
+    step
+      scheduler.DumpAllInfo()
+  step
+    step
+      scheduler.Wr(Uop(12,2,82), false)
+      scheduler.WrBack(0)
+    step
+      scheduler.DumpAllInfo()
+  step
+    step
+      scheduler.Rd()
+    step
+      WriteLine("")
+      WriteLine("dout="+scheduler.GetDout()+"")
+    step
+      scheduler.DumpAllInfo()
+  step
+    scheduler.DumpAllInfo()
+
