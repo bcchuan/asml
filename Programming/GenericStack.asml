@@ -1,0 +1,41 @@
+// AsmL supports generics - also commonly known as parameterized types.
+// The example below shows a Stack generic class declaration where 
+// a type parameter, called T, is specified using the of keyword.
+
+class Stack of T
+  private var s as Seq of T = []
+  Push(data as T) s := [data] + s
+  Pop() as T
+    if Size(s) <= 0 then
+      error "Pop(): empty stack error"
+    else
+      let head = Head(s)
+      s := Tail(s)
+      return head
+  Top() as T
+    if Size(s) <= 0 then
+      error "Top(): empty stack error"
+    else
+      return Head(s)
+  Size() as Integer return Size(s)
+  public override ToString() as String? return s.ToString()
+
+PushMultiple of T (stack as Stack of T, s as Seq of T)
+  step foreach x in s
+    stack.Push(x)
+
+Main()
+  stack = new Stack of Integer
+  step stack.Push(3)
+  step stack.Push(1)
+  step PushMultiple(stack, [2, 5])
+  step WriteLine("stack = " + stack)
+  step WriteLine("stack.Pop() = " + stack.Pop())
+  step WriteLine("stack.Top() = " + stack.Top())
+  step WriteLine("stack.Size() = " + stack.Size())
+
+// The output result is:
+// stack = [5, 2, 1, 3]
+// stack.Pop() = 5
+// stack.Top() = 2
+// stack.Size() = 3
