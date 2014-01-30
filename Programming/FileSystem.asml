@@ -1,0 +1,80 @@
+// Adapted from:
+// Observations on the Decidability of Transitions, Yuri Gurevich1 and Rostislav Yavorskiy.
+
+namespace FileSystem
+
+type FileId = Integer
+
+enum FileAttr
+  Regular
+  Directory
+
+class File
+  var fid as FileId // explicit unique identifier
+  var sort as FileAttr
+  var name as String // file name
+  var parent as FileId //reference to the parent
+  var children as Set of FileId // the children
+  var content as String // the children
+
+// Thus a file system is modeled as a set of file records.
+// The fid field provides an explicit unique identifier of a file.
+// As an object (or class instance), a file is automatically provided with an object ID,
+// but there may be good reasons to have explicit identifiers as well.
+
+// The root of the file system has a file ID but no other file fields.
+// A global variable files contains the current set of existing files;
+// initially it is empty.
+// And there is a counter that provides fresh file IDs.
+
+const root as FileId = 0
+var files as Set of File = {}
+var nextFid as FileId = 1
+
+const rootFile = new File(nextFid, Directory, "Root", root, {}, "I'm Root")
+
+// We specify common file system operations for creation, deletion and
+// renaming/moving of a resource.
+
+procedure Create(parent as File, name as String, sort as FileAttr) as File
+  let fid = nextFid
+  let file = new File(fid, sort, name, parent.parent, {}, "")
+  add file to files
+  add fid to parent.children
+  nextFid += 1
+  return file
+
+procedure Delete(file as File)
+  let parent = the fileP | fileP in files where file.parent = fileP.fid
+  require file.children = {}
+  remove file.fid from parent.children
+  remove file from files
+
+procedure Move (file as File, newName as String, newParent as File)
+  file.parent := newParent.fid
+  file.name := newName
+  add file.fid to newParent.children
+  let oldParent = the fileP | fileP in files where file.parent = fileP.fid
+  remove file.fid from oldParent.children
+
+// The following method formalizes the property to be verified.
+
+Invariant() as Boolean
+  return
+    forall f1 in files, f2 in files holds
+      (f1 ne f2) implies (f1.fid in f2.children iff f1.parent = f2.fid)
+
+// Note that the operations Create and Delete affect two files - all the rest
+// remain unchanged.
+// The Move operation affects only three files, namely the moved file,
+// its old parent and its new parent).
+
+Main()
+  step
+    let homeFile = Create(rootFile, "Home", Directory)
+  step
+    let textFile = Create(homeFile, "Text", Regular)
+  step
+    foreach f in files
+      WriteLine("name="+f.name+" id="+f.fid+" attr="+f.sort+"")
+
