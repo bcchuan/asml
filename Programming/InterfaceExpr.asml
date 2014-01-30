@@ -1,0 +1,26 @@
+interface Expr
+  Eval() as Integer
+
+structure ValExpr implements Expr
+  val as Integer
+  public Eval() as Integer
+    return val
+
+class AddExpr implements Expr
+  lhs as Expr
+  rhs as Expr
+  public Eval() as Integer
+    return lhs.Eval() + rhs.Eval()
+
+Eval(e as Expr) as Integer
+  match e
+    ValExpr(v)    : return v
+    AddExpr(l, r) : return Eval(l) + Eval(r)
+
+Main()
+  three = ValExpr(3)
+  four = ValExpr(4)
+  seven = new AddExpr(three, four)
+  step WriteLine(seven.Eval())
+  step WriteLine(Eval(seven))
+
