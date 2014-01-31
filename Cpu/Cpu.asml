@@ -1,0 +1,84 @@
+// AsmL for a simple CPU, written by BC Chuan, 2014-01-30
+
+namespace Cpu
+
+type Addr = Integer
+type Value = Integer or Instruction
+
+interface MemIo
+  lookup(a as Addr) as Value
+  write(a as Addr, v as Value)
+
+class Mem implements MemIo
+  private var memory as Map of Addr to Value = {->}
+  public lookup(a as Addr) as Value
+    return memory(a) 
+  public write(a as Addr, v as Value)
+    memory(a) := v
+
+class CpuCore implements MemIo
+  private var imem = new Mem()
+  private var pc as Addr = 0
+  private var inst as Instruction = Add(0,0,0)
+
+  public lookup(a as Addr) as Value
+    return imem.lookup(a) 
+
+  public write(a as Addr, v as Value)
+    imem.write(a, v)
+
+  Run()
+    step
+      inst := imem.lookup(pc) as Instruction
+    step
+      match inst
+        Add(rd, ra, rb) :
+                          WriteLine("Add rd="+rd+" ra="+ra+" rb="+rb+"")
+                          pc := pc + 1
+        Ld(rd, ri, off) :
+                          WriteLine("Ld  rd="+rd+" ri="+ri+" off="+off+"")
+                          pc := pc + 1
+        St(rs, ri, off) :
+                          WriteLine("St  rs="+rs+" ri="+ri+" off="+off+"")
+                          pc := pc + 1
+        Bz(rc, off) :   
+                          WriteLine("Bz  rc="+rc+" off="+off+"")
+                          pc := pc + 1
+
+structure Instruction
+  case Add
+    rd as Integer
+    ra as Integer
+    rb as Integer
+  case Ld
+    rd as Integer
+    ri as Integer
+    off as Integer
+  case St
+    rs as Integer
+    ri as Integer
+    off as Integer
+  case Bz
+    rc as Integer
+    off as Integer
+
+Main()
+  step
+     c = new CpuCore()
+  step
+     c.write(0, Add(0,0,0))
+  step
+     c.write(1, Ld(1,1,1))
+  step
+     c.write(2, St(2,2,2))
+  step
+     c.write(3, Bz(3,3))
+  step
+     c.Run()
+  step
+     c.Run()
+  step
+     c.Run()
+  step
+     c.Run()
+
