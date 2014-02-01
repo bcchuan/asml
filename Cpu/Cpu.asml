@@ -34,12 +34,12 @@ class Mem implements MemIo
     memory(a) := v
 
 interface CpuCoreIo
-  imemLookup(a as Addr) as Value
-  dmemLookup(a as Addr) as Value
-  regfLookup(a as Addr) as Value
-  imemWrite(a as Addr, v as Value)
-  dmemWrite(a as Addr, v as Value)
-  regfWrite(a as Addr, v as Value)
+  imemLookup(a as Addr) as Instruction
+  dmemLookup(a as Addr) as Integer
+  regfLookup(a as Addr) as Integer
+  imemWrite(a as Addr, v as Instruction)
+  dmemWrite(a as Addr, v as Integer)
+  regfWrite(a as Addr, v as Integer)
 
 class CpuCore implements CpuCoreIo
   private var imem = new Mem()
@@ -47,38 +47,38 @@ class CpuCore implements CpuCoreIo
   private var regf = new Mem()
   private var pc as Addr = 0
 
-  public imemLookup(a as Addr) as Value
-    return imem.lookup(a) 
-  public dmemLookup(a as Addr) as Value
-    return dmem.lookup(a) 
-  public regfLookup(a as Addr) as Value
-    return regf.lookup(a) 
+  public imemLookup(a as Addr) as Instruction
+    return imem.lookup(a) as Instruction
+  public dmemLookup(a as Addr) as Integer
+    return dmem.lookup(a) as Integer
+  public regfLookup(a as Addr) as Integer
+    return regf.lookup(a) as Integer
 
-  public imemWrite(a as Addr, v as Value)
+  public imemWrite(a as Addr, v as Instruction)
     imem.write(a, v)
-  public dmemWrite(a as Addr, v as Value)
+  public dmemWrite(a as Addr, v as Integer)
     dmem.write(a, v)
-  public regfWrite(a as Addr, v as Value)
+  public regfWrite(a as Addr, v as Integer)
     regf.write(a, v)
 
   Run()
-    let inst = imemLookup(pc) as Instruction
+    let inst = imemLookup(pc)
     match inst
       Add(rd, ra, rb) :
         WriteLine("Add rd="+rd+" ra="+ra+" rb="+rb+"")
-        regfWrite(rd, regfLookup(ra) as Integer + regfLookup(rb) as Integer)
+        regfWrite(rd, regfLookup(ra) + regfLookup(rb))
         pc := pc + 1
       Ld(rd, ri, off) :
         WriteLine("Ld  rd="+rd+" ri="+ri+" off="+off+"")
-        regfWrite(rd, dmemLookup(regfLookup(ri) as Integer + off) as Integer)
+        regfWrite(rd, dmemLookup(regfLookup(ri) + off))
         pc := pc + 1
       St(rs, ri, off) :
         WriteLine("St  rs="+rs+" ri="+ri+" off="+off+"")
-        dmemWrite(regfLookup(ri) as Integer + off, regfLookup(rs) as Integer)
+        dmemWrite(regfLookup(ri) + off, regfLookup(rs))
         pc := pc + 1
       Bz(rc, off) :   
         WriteLine("Bz  rc="+rc+" off="+off+"")
-        if (regfLookup(rc) as Integer = 0) 
+        if (regfLookup(rc) = 0) 
            pc := pc + off
         else
            pc := pc + 1
