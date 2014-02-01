@@ -7,32 +7,33 @@ structure Uop
   sReg   as Integer
   dReg   as Integer
 
-class Scheduler
+interface SchedulerIo
+  IsFull() as Boolean
+  IsAvailable() as Boolean
+  GetDout() as Uop
+  Wr(din as Uop, ready as Boolean)
+  Rd()
+  WrBack(reg as Integer)
+
+class Scheduler implements SchedulerIo
   var uopQueue as Map of Integer to Uop = {->}
   var rdyQueue as Map of Integer to Boolean = {->}
   var valQueue as Map of Integer to Boolean = {->}
   var dout     as Uop = Uop(0,0,0)
   var uopTag   as Integer = 0
 
-  findEarliestReadyTag() as Integer
-    return the w | w in Keys(uopQueue) where
-             rdyQueue(w) and valQueue(w) and
-             not (exists v in Keys(uopQueue) where
-                    v < w and
-                    rdyQueue(v) and valQueue(v))
-
-  IsFull() as Boolean
+  public IsFull() as Boolean
     return false
 
-  IsAvailable() as Boolean
+  public IsAvailable() as Boolean
     return exists v in Keys(rdyQueue)
       where rdyQueue(v) and valQueue(v)
 
-  GetDout() as Uop
+  public GetDout() as Uop
     return dout
 
   [Action]
-  Wr(din as Uop, ready as Boolean)
+  public Wr(din as Uop, ready as Boolean)
     if not IsFull()
       uopQueue(uopTag) := din
       rdyQueue(uopTag) := ready
@@ -40,17 +41,24 @@ class Scheduler
       uopTag := uopTag + 1
 
   [Action]
-  Rd()
+  public Rd()
     if IsAvailable()
       let tag = findEarliestReadyTag()
       valQueue(tag) := false
       dout := uopQueue(tag)
 
   [Action]
-  WrBack(reg as Integer)
+  public WrBack(reg as Integer)
     forall tag in Keys(uopQueue)
      if uopQueue(tag).sReg = reg and valQueue(tag) and not rdyQueue(tag)
        rdyQueue(tag) := true
+
+  private findEarliestReadyTag() as Integer
+    return the w | w in Keys(uopQueue) where
+             rdyQueue(w) and valQueue(w) and
+             not (exists v in Keys(uopQueue) where
+                    v < w and
+                    rdyQueue(v) and valQueue(v))
 
   DumpAllInfo()
     WriteLine("")
