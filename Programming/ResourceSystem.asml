@@ -1,0 +1,123 @@
+// Modelling System Behaviour by Abstract State Machines, Artur Andrzejak
+
+namespace ResourceSystem
+
+// Modeling Resources
+
+abstract class Resource
+
+class Software extends Resource
+  var name as String
+  var version as String
+  var targetOS as Set of String
+  var hdRequired as Integer // in MByte
+  constraint Size(targetOS) > 0
+
+class Host extends Resource
+  var installedOS as Set of String
+  var installedSoftware as Set of Software
+  var RAM as Integer        // in MByte
+  var freeHd as Integer     // in MByte
+  constraint Size(installedOS) > 0
+
+// Modeling Behavior
+
+interface ImplicitAction
+  pre() as Boolean
+  post() as Boolean
+
+interface ExplicitAction extends ImplicitAction
+  execute() as Boolean
+
+class InstallJava implements ExplicitAction
+  var host as Host
+  var java as Software
+  var sysHandle as RealSystemHandle
+
+  public pre() as Boolean
+    return ((exists OS in host.installedOS
+               where OS in java.targetOS)
+        and (java.hdRequired < host.freeHd))
+  public post() as Boolean
+    return (exists soft in host.installedSoftware
+              where soft.name = java.name and
+                    soft.version >=  java.version)
+  public execute() as Boolean
+    step
+      if post() or (not pre())
+        skip
+        WriteLine ("InstallJava not executed")
+      else
+        if sysHandle.reallyDo
+          step
+            sysHandle.issueCommand(host,"javaInstall.bat")
+          step
+            sysHandle.updateModel(host)
+        else
+          add java to host.installedSoftware
+    step
+      return post()
+
+class RealSystemHandle
+  var reallyDo as Boolean
+  issueCommand(res as Resource, scriptName as String)
+  updateModel(res as Resource)
+
+class InstallEclipse implements ExplicitAction
+  var host as Host
+  var eclipse as Software
+  var sysHandle as RealSystemHandle
+  public pre() as Boolean
+    return (pre_targetOS() and pre_enoughHd() and pre_javaVersion())
+  pre_targetOS() as Boolean
+    return (exists OS in host.installedOS
+              where OS in eclipse.targetOS)
+  pre_enoughHd() as Boolean
+    return (eclipse.hdRequired < host.freeHd)
+  pre_javaVersion() as Boolean
+    return (exists soft in host.installedSoftware
+              where soft.name = "java" and
+                    soft.version >= "1.4.3")
+  public post() as Boolean
+    return (post_eclipseInstalled())
+  post_eclipseInstalled() as Boolean
+    return (exists soft in host.installedSoftware
+              where soft.name = eclipse.name and
+                    soft.version >= eclipse.version)
+  public execute() as Boolean
+    step
+      if post() or (not pre())
+        skip
+        WriteLine ("InstallEclipse not executed")
+      else
+        if sysHandle.reallyDo
+          step
+            sysHandle.issueCommand(host,"eclipseInstallation.bat")
+          step
+            sysHandle.updateModel(host)
+        else
+          step 
+            add eclipse to host.installedSoftware
+    step
+      return post()
+
+// Main program
+
+Main()
+  sysHandle = new RealSystemHandle(false)
+  // create a host instance and initialize
+  var myComputer = new Host({"WinXP"}, {}, 512,15000) 
+  // create software instances as constants
+  var java = new Software("java", "1.4.3", {"linux","Solaris", "HPUX", "Win2000", "WinXP"}, 80)
+  var eclipseIDE = new Software("eclipse", "3.0",{"linux", "Solaris", "HPUX", "Win2000","WinXP"}, 300)
+  step
+    var installJava = new InstallJava(myComputer, java, sysHandle)
+    installJava.execute()
+  step
+    var installEclipse = new InstallEclipse(myComputer, eclipseIDE, sysHandle)
+    installEclipse.execute()
+  step
+    if installEclipse.post()
+      WriteLine ("Eclipse installed.")
+    else
+      WriteLine ("Eclipse installation failed.")
