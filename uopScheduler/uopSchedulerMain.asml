@@ -23,10 +23,8 @@ Main()
       scheduler.DumpAllInfo()
   step
     step
-      scheduler.Rd()
-    step
       WriteLine("")
-      WriteLine("dout="+scheduler.GetDout()+"")
+      WriteLine("dout="+scheduler.Rd()+"")
     step
       scheduler.DumpAllInfo()
   step
