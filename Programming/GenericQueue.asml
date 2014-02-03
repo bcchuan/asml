@@ -1,0 +1,50 @@
+// AsmL supports generics - also commonly known as parameterized types.
+// The example below shows a Queue generic class declaration where 
+// a type parameter, called T, is specified using the of keyword.
+
+class Queue of T
+  private var s as Seq of T = []
+  Enq(data as T)
+    s := s + [data]
+  Exist(data as T) as Boolean
+    return exists d in s where d = data
+  Deq() as T
+    if Size(s) <= 0 then
+      error "Deq(): empty queue error"
+    else
+      let head = Head(s)
+      s := Tail(s)
+      return head
+  Top() as T
+    if Size(s) <= 0 then
+      error "Top(): empty queue error"
+    else
+      return Head(s)
+  Size() as Integer
+    return Size(s)
+  public override ToString() as String?
+    return s.ToString()
+
+EnqMultiple of T (queue as Queue of T, s as Seq of T)
+  step foreach x in s
+    queue.Enq(x)
+
+Main()
+  queue = new Queue of Integer
+  step queue.Enq(3)
+  step queue.Enq(1)
+  step EnqMultiple(queue, [2, 5])
+  step WriteLine("queue = " + queue)
+  step WriteLine("queue.Deq() = " + queue.Deq())
+  step WriteLine("queue.Top() = " + queue.Top())
+  step WriteLine("queue.Size() = " + queue.Size())
+  step WriteLine("queue.Exist(2) = " + queue.Exist(2))
+  step WriteLine("queue.Exist(7) = " + queue.Exist(7))
+
+// The output result is:
+// queue = [3, 1, 2, 5]
+// queue.Deq() = 3
+// queue.Top() = 1
+// queue.Size() = 3
+// queue.Exist(2) = True
+// queue.Exist(7) = False
