@@ -1,0 +1,173 @@
+// AsmL for a simple CPU, written by BC Chuan, 2014-01-30
+
+namespace Cpu
+
+type Addr = Integer
+type Value = Integer or Instruction
+
+structure Instruction
+  case Add
+    rd as Integer
+    ra as Integer
+    rb as Integer
+  case Ld
+    rd as Integer
+    ri as Integer
+    off as Integer
+  case St
+    rs as Integer
+    ri as Integer
+    off as Integer
+  case Bz
+    rc as Integer
+    off as Integer
+
+structure DecodedInstruction
+  case DAdd
+    rd  as Integer
+    a   as Integer
+    b   as Integer
+  case DLd
+    rd  as Integer
+    adr as Integer
+    off as Integer
+  case DSt
+    val as Integer
+    adr as Integer
+    off as Integer
+  case DBz
+    cond     as Integer
+    branchpc as Integer
+    off      as Integer
+
+interface MemIo
+  lookup(a as Addr) as Value
+  write(a as Addr, v as Value)
+
+class Mem implements MemIo
+  private var memory as Map of Addr to Value = {->}
+  public lookup(a as Addr) as Value
+    return memory(a) 
+  public write(a as Addr, v as Value)
+    memory(a) := v
+
+interface CpuCoreIo
+  imemLookup(a as Addr) as Instruction
+  dmemLookup(a as Addr) as Integer
+  regfLookup(a as Addr) as Integer
+  imemWrite(a as Addr, v as Instruction)
+  dmemWrite(a as Addr, v as Integer)
+  regfWrite(a as Addr, v as Integer)
+
+class CpuCore implements CpuCoreIo
+  private var imem = new Mem()
+  private var dmem = new Mem()
+  private var regf = new Mem()
+  private var exeq = new Queue of DecodedInstruction
+  private var pc as Addr = 0
+
+  public imemLookup(a as Addr) as Instruction
+    return imem.lookup(a) as Instruction
+  public dmemLookup(a as Addr) as Integer
+    return dmem.lookup(a) as Integer
+  public regfLookup(a as Addr) as Integer
+    return regf.lookup(a) as Integer
+
+  public imemWrite(a as Addr, v as Instruction)
+    imem.write(a, v)
+  public dmemWrite(a as Addr, v as Integer)
+    dmem.write(a, v)
+  public regfWrite(a as Addr, v as Integer)
+    regf.write(a, v)
+
+//private function stall(inst as Instruction) as Boolean
+//  match inst
+//    Add(rd, ra, rb) : return exeq.Search(ra) or exeq.Search(rb)
+//    Ld(rd, ri, off) : return exeq.Search(rd)
+//    St(rs, ri, off) : return exeq.Search(rs) or exeq.Search(ri)
+//    Bz(rc, off)     : return exeq.Search(rc)   
+  private function stall(inst as Instruction) as Boolean
+    return false
+
+  fetchAndDec(inst as Instruction)
+    if (not stall(inst))
+      pc := pc + 1
+      match inst
+        Add(rd, ra, rb) :
+          exeq.Enq(DAdd(rd, regfLookup(ra), regfLookup(rb)))
+          WriteLine("Add rd="+rd+" ra="+ra+" rb="+rb+"")
+        Ld(rd, ri, off) :
+          exeq.Enq(DLd(rd, regfLookup(ri), off))
+          WriteLine("Ld  rd="+rd+" ri="+ri+" off="+off+"")
+        St(rs, ri, off) :
+          exeq.Enq(DSt(regfLookup(rs), regfLookup(ri), off))
+          WriteLine("St  rs="+rs+" ri="+ri+" off="+off+"")
+        Bz(rc, off)     :
+          exeq.Enq(DBz(regfLookup(rc), pc, off))
+          WriteLine("Bz  rc="+rc+" off="+off+"")
+
+  execAndWb()
+    if exeq.Size() > 0
+      exeq.Deq()
+      match exeq.Top()
+        DAdd(rd, a, b) :
+          regfWrite(rd, a+b)
+        DLd(rd, adr, off) :
+          regfWrite(rd, dmemLookup(adr+off))
+        DSt(val, adr, off) :
+          dmemWrite(adr+off, val)
+        DBz(cond, branchpc, off)     :
+          if cond = 0
+            pc := branchpc + off
+            exeq.Clear()
+
+  Run()
+    step
+      let inst = imemLookup(pc)
+      step fetchAndDec(inst)
+      step execAndWb()
+
+class Queue of T
+  private var s as Seq of T = []
+  Enq(data as T)
+    s := s + [data]
+  Exist(data as T) as Boolean
+    return exists d in s where d = data
+  Clear()
+    s := []
+  Deq() as T
+    if Size(s) <= 0 then
+      error "Deq(): empty queue error"
+    else
+      let head = Head(s)
+      s := Tail(s)
+      return head
+  Top() as T
+    if Size(s) <= 0 then
+      error "Top(): empty queue error"
+    else
+      return Head(s)
+  Size() as Integer
+    return Size(s)
+  public override ToString() as String?
+    return s.ToString()
+
+Main()
+  step c = new CpuCore()
+  step c.imemWrite(0, Add(0,0,0))
+  step c.imemWrite(1, Ld(1,1,1))
+  step c.imemWrite(2, St(2,2,2))
+  step c.imemWrite(3, Bz(3,3))
+  step c.dmemWrite(0, 0)
+  step c.dmemWrite(1, 0)
+  step c.dmemWrite(2, 0)
+  step c.dmemWrite(3, 0)
+  step c.regfWrite(0, 0)
+  step c.regfWrite(1, 0)
+  step c.regfWrite(2, 0)
+  step c.regfWrite(3, 0)
+  step c.Run()
+  step c.Run()
+  step c.Run()
+  step c.Run()
+
