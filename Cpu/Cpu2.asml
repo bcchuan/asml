@@ -63,7 +63,8 @@ class CpuCore implements CpuCoreIo
   private var imem = new Mem()
   private var dmem = new Mem()
   private var regf = new Mem()
-  private var exeq = new Queue of DecodedInstruction
+  private var exeq as Seq of DecodedInstruction = []
+  private var adrq as Seq of Integer = []
   private var pc as Addr = 0
 
   public imemLookup(a as Addr) as Instruction
@@ -80,77 +81,54 @@ class CpuCore implements CpuCoreIo
   public regfWrite(a as Addr, v as Integer)
     regf.write(a, v)
 
-//private function stall(inst as Instruction) as Boolean
-//  match inst
-//    Add(rd, ra, rb) : return exeq.Search(ra) or exeq.Search(rb)
-//    Ld(rd, ri, off) : return exeq.Search(rd)
-//    St(rs, ri, off) : return exeq.Search(rs) or exeq.Search(ri)
-//    Bz(rc, off)     : return exeq.Search(rc)   
   private function stall(inst as Instruction) as Boolean
-    return false
+    match inst
+      Add(rd, ra, rb) : return ((ra in adrq) or (rb in adrq))
+      Ld(rd, ri, off) : return ((ri in adrq))
+      St(rs, ri, off) : return ((rs in adrq))
+      Bz(rc, off)     : return ((rc in adrq))
 
   fetchAndDec(inst as Instruction)
     if (not stall(inst))
       pc := pc + 1
       match inst
         Add(rd, ra, rb) :
-          exeq.Enq(DAdd(rd, regfLookup(ra), regfLookup(rb)))
+          exeq := exeq + [DAdd(rd, regfLookup(ra), regfLookup(rb))]
+          adrq := adrq + [rd]
           WriteLine("Add rd="+rd+" ra="+ra+" rb="+rb+"")
         Ld(rd, ri, off) :
-          exeq.Enq(DLd(rd, regfLookup(ri), off))
+          exeq := exeq + [DLd(rd, regfLookup(ri), off)]
+          adrq := adrq + [rd]
           WriteLine("Ld  rd="+rd+" ri="+ri+" off="+off+"")
         St(rs, ri, off) :
-          exeq.Enq(DSt(regfLookup(rs), regfLookup(ri), off))
+          exeq := exeq + [DSt(regfLookup(rs), regfLookup(ri), off)]
           WriteLine("St  rs="+rs+" ri="+ri+" off="+off+"")
         Bz(rc, off)     :
-          exeq.Enq(DBz(regfLookup(rc), pc, off))
+          exeq := exeq + [DBz(regfLookup(rc), pc, off)]
           WriteLine("Bz  rc="+rc+" off="+off+"")
 
   execAndWb()
-    if exeq.Size() > 0
-      exeq.Deq()
-      match exeq.Top()
+    if Size(exeq) > 0
+      exeq := Tail(exeq)
+      match Head(exeq)
         DAdd(rd, a, b) :
           regfWrite(rd, a+b)
+          adrq := Tail(adrq)
         DLd(rd, adr, off) :
           regfWrite(rd, dmemLookup(adr+off))
+          adrq := Tail(adrq)
         DSt(val, adr, off) :
           dmemWrite(adr+off, val)
-        DBz(cond, branchpc, off)     :
+        DBz(cond, branchpc, off) :
           if cond = 0
             pc := branchpc + off
-            exeq.Clear()
+            exeq := []
 
   Run()
     step
       let inst = imemLookup(pc)
       step fetchAndDec(inst)
       step execAndWb()
-
-class Queue of T
-  private var s as Seq of T = []
-  Enq(data as T)
-    s := s + [data]
-  Exist(data as T) as Boolean
-    return exists d in s where d = data
-  Clear()
-    s := []
-  Deq() as T
-    if Size(s) <= 0 then
-      error "Deq(): empty queue error"
-    else
-      let head = Head(s)
-      s := Tail(s)
-      return head
-  Top() as T
-    if Size(s) <= 0 then
-      error "Top(): empty queue error"
-    else
-      return Head(s)
-  Size() as Integer
-    return Size(s)
-  public override ToString() as String?
-    return s.ToString()
 
 Main()
   step c = new CpuCore()
