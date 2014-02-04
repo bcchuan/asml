@@ -15,21 +15,21 @@ class Scheduler
 
   [Action]
   public Wr(din as Uop, ready as Boolean)
-    if not IsFull()
-      uopQueue(uopTag) := din
-      rdyQueue(uopTag) := ready
-      valQueue(uopTag) := true
-      uopTag := uopTag + 1
+    require not IsFull()
+    uopQueue(uopTag) := din
+    rdyQueue(uopTag) := ready
+    valQueue(uopTag) := true
+    uopTag := uopTag + 1
 
   public IsFull() as Boolean
     return false
 
   [Action]
   public Rd() as Uop
-    if IsAvailable()
-      let tag = findEarliestReadyTag()
-      valQueue(tag) := false
-      return uopQueue(tag)
+    require IsAvailable()
+    let tag = findEarliestReadyTag()
+    valQueue(tag) := false
+    return uopQueue(tag)
 
   public IsAvailable() as Boolean
     return exists v in Keys(rdyQueue)
