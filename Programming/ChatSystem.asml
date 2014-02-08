@@ -1,0 +1,42 @@
+class Client
+
+type Message = String
+type SendersQueue = Map of Client to Seq of Message
+type MemberState = Map of Client to SendersQueue
+
+var Members as MemberState
+
+[Action]
+Post(sndr as Client, msg as Message)
+  require sndr in Members
+  require Members.Size > 1
+  forall rcvr in Members
+    if rcvr <> sndr
+      Members(rcvr)(sndr) := Members(rcvr)(sndr) + [msg]
+
+[Action]
+Deliver(msg as Message, sndr as Client, rcvr as Client)
+  require rcvr in Members
+  require sndr in Members(rcvr)
+  require Members(rcvr)(sndr).Length > 0
+  require Members(rcvr)(sndr).Head = msg
+  Members(rcvr)(sndr) := Members(rcvr)(sndr).Tail
+
+Main()
+  s = new Client
+  r = new Client
+  var Members = {r->{s->["HI"]},
+                 s->{r->["BYE"]}}
+  step WriteLine(Members(r)(s))
+  step WriteLine(Members(s)(r))
+  step WriteLine(s in Members)
+  step WriteLine(r in Members)
+  step WriteLine(Members.Size)
+  step WriteLine(s in Members(r))
+  step WriteLine(Members(r)(s).Length)
+  step WriteLine(Members(r)(s).Head)
+  step WriteLine(Members(r)(s).Tail)
+  step Members(r)(s) := Members(r)(s) + ["WOW"]
+  step WriteLine(Members(r)(s).Tail)
+//step Post(s, "COOL")
+//step Deliver("COOL", s, r)
