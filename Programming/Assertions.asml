@@ -1,0 +1,50 @@
+// AsmL keywords for assertions:
+//   require
+//   ensure
+//   constraint
+//
+//   result
+//   resulting
+
+AllTickets = {1..1024}
+
+IsTicketID(i as Integer) as Boolean
+  require i > 0
+  return (i in AllTickets)
+
+ChooseAnyTicket() as Integer
+  ensure IsTicketID(result)
+  return (any t | t in AllTickets)
+
+Incr(x as Integer) as Integer
+  require x >= 0
+  ensure result = x + 1
+  return ((((x + 1) * 2) - 2) / 2) + 1
+
+var Counter = 0
+
+Increment()
+  require Counter >= 0
+  ensure resulting Counter = Counter + 1
+  Counter := ((((Counter + 1) * 2) - 2) / 2) + 1
+
+structure Rational
+  numerator as Integer
+  denom as Integer
+  constraint NonZeroDivisor : denom <> 0
+
+Main()
+  constraint Counter >= 0
+  step WriteLine(ChooseAnyTicket())
+  step WriteLine(Incr(1))
+  step WriteLine(Incr(99))
+  step Increment()
+  step WriteLine(Counter)
+  step Increment()
+  step WriteLine(Counter)
+  let r1 = Rational(1, 2) // OK
+  let r2 = Rational(2, 0) // error occurs
+  step WriteLine(r1)
+  step WriteLine(r2)
+
+
