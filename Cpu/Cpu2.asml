@@ -81,6 +81,19 @@ class CpuCore implements CpuCoreIo
   public regfWrite(a as Addr, v as Integer)
     regf.write(a, v)
 
+  private function exeqEnq (v as DecodedInstruction)
+    exeq := exeq + [v]
+  private function adrqEnq (v as Integer)
+    adrq := adrq + [v]
+  private function exeqDeq () as DecodedInstruction
+    exeq := Tail(exeq)
+    return Head(exeq)
+  private function adrqDeq () as Integer
+    adrq := Tail(adrq)
+    return Head(adrq)
+  private function exeqClear ()
+    exeq := []
+
   private function stall(inst as Instruction) as Boolean
     match inst
       Add(rd, ra, rb) : return ((ra in adrq) or (rb in adrq))
@@ -93,36 +106,35 @@ class CpuCore implements CpuCoreIo
       pc := pc + 1
       match inst
         Add(rd, ra, rb) :
-          exeq := exeq + [DAdd(rd, regfLookup(ra), regfLookup(rb))]
-          adrq := adrq + [rd]
+          exeqEnq(DAdd(rd, regfLookup(ra), regfLookup(rb)))
+          adrqEnq(rd)
           WriteLine("Add rd="+rd+" ra="+ra+" rb="+rb+"")
         Ld(rd, ri, off) :
-          exeq := exeq + [DLd(rd, regfLookup(ri), off)]
-          adrq := adrq + [rd]
+          exeqEnq(DLd(rd, regfLookup(ri), off))
+          adrqEnq(rd)
           WriteLine("Ld  rd="+rd+" ri="+ri+" off="+off+"")
         St(rs, ri, off) :
-          exeq := exeq + [DSt(regfLookup(rs), regfLookup(ri), off)]
+          exeqEnq(DSt(regfLookup(rs), regfLookup(ri), off))
           WriteLine("St  rs="+rs+" ri="+ri+" off="+off+"")
         Bz(rc, off)     :
-          exeq := exeq + [DBz(regfLookup(rc), pc, off)]
+          exeqEnq(DBz(regfLookup(rc), pc, off))
           WriteLine("Bz  rc="+rc+" off="+off+"")
 
   execAndWb()
     if Size(exeq) > 0
-      exeq := Tail(exeq)
-      match Head(exeq)
+      match exeqDeq()
         DAdd(rd, a, b) :
           regfWrite(rd, a+b)
-          adrq := Tail(adrq)
+          adrqDeq()
         DLd(rd, adr, off) :
           regfWrite(rd, dmemLookup(adr+off))
-          adrq := Tail(adrq)
+          adrqDeq()
         DSt(val, adr, off) :
           dmemWrite(adr+off, val)
         DBz(cond, branchpc, off) :
           if cond = 0
             pc := branchpc + off
-            exeq := []
+            exeqClear()
 
   Run()
     step
