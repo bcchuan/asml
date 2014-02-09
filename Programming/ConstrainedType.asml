@@ -1,0 +1,22 @@
+// Constrained Type
+
+type SmallInt = Integer where value in {1, 2, 3}
+
+type IntOrString = Integer or String
+
+MyFun1(x as SmallInt) as IntOrString
+  match x 
+    1: return 1
+    2: return 2
+    3: return "Neither 1 nor 2"
+
+MyFun2(x as SmallInt, y as SmallInt) as SmallInt
+  return ((x + y) mod 3) + 1
+
+Main()
+  step
+    WriteLine(MyFun1(1)) // prints 1
+  step
+    WriteLine(MyFun1(3)) // prints "Neither 1 nor 2"
+  step
+    WriteLine(MyFun1(4)) // causes runtime error
