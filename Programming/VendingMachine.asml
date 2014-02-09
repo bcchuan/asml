@@ -144,8 +144,8 @@ Init()
 // Printing out the trace of activity
 
 PrintState(B as Set of Product)
-  pcredit = Credit
-  pprice = ProductSelected().price
+  let pcredit = Credit
+  let pprice = ProductSelected().price
   step 1:
     WriteLine("Selection: " + Selection +
               " Product: " + ProductSelected().name +
@@ -180,7 +180,7 @@ VendingStep(B as Set of Product,i as InputEvent)
       SettleAccount(Change(Credit, ProductSelected().price))
       WriteLine("=========================")
       WriteLine("Next Operation result: " )
-      WriteLine("Despensed: " + ProductSelected().name)
+      WriteLine("Dispensed: " + ProductSelected().name)
       WriteLine("Change Given: " + Change(Credit,ProductSelected().price))
       WriteLine("=========================")
 
