@@ -1,0 +1,238 @@
+// Vending Machine
+
+// Product bins
+
+class Product
+  var name as String
+  var price as Integer
+  var stock as Integer
+
+var p1 = new Product("E_Soda", 60, 0)
+var p2 = new Product("E_Candy", 75, 0)
+var p3 = new Product("E_Chips", 150, 0)
+var p4 = new Product("E_Sandwich", 215, 0)
+var p5 = new Product("NullProduct", 0, 0)
+
+// Coded key sequences
+
+var Code as Map of (Seq of Char) to Product = {->}
+
+// Coin changer state
+
+var Credit as Integer = 0
+var Reserve as Integer = 0
+
+// Current selection
+
+var Selection as Seq of Char = []
+
+ProductSelected() as Product
+  return Code(Selection)
+
+// Change
+
+DetermineChange(amount as Integer, reserve as Integer) as Integer
+  step
+    if amount > reserve then
+      return -1
+    else
+      return amount
+
+Change(credit as Integer, price as Integer) as Integer
+  let amount = credit - price
+  return DetermineChange(amount, Reserve)
+
+NoChange(credit as Integer, price as Integer) as Boolean
+  return ((Change(credit, price)) = -1)
+
+// Stock
+
+// calculate the value of the stock currently in the machine
+StockAmount(B as Set of Product) as Integer
+  var sum = 0
+  step foreach p in B
+    sum := sum + p.price * p.stock
+  step
+    return sum
+
+// check to see if one of the containers is empty
+EmptyStock(p as Product, B as Set of Product) as Boolean
+  step
+    if p.stock = 0 then
+      WriteLine("=========================")
+      WriteLine("Next operation result:")
+      WriteLine("No " + p.name + " in machine")
+      WriteLine("Stock is: --------")
+  step
+    if p.stock = 0 then
+      forall k in B
+        WriteLine(k.name + " " + k.stock)
+  step
+    WriteLine("=========================")
+  return (p.stock = 0)
+ 
+// Operations
+
+SaleReady(B as Set of Product) as Boolean
+  return (not EmptyStock(ProductSelected(), B)
+          and Selection <> ['0','0'] 
+          and Credit >= ProductSelected().price
+          and not NoChange(Credit, ProductSelected().price))
+
+SettleAccount(change as Integer)
+  Reserve := Reserve + Credit - change
+  Credit := Credit - ProductSelected().price
+
+DispenseProduct()
+  ProductSelected().stock := ProductSelected().stock - 1
+
+UpdateMachine()
+  Selection := ['0','0']
+  Credit := 0
+
+// Input events
+
+structure InputEvent
+  case CodeInput
+    code as Seq of Char
+  case CoinInput
+    coin as Integer
+  case CoinReturnInput
+
+HandleInput(i as InputEvent)
+  match i
+    CodeInput(s):      MakeSelection(s)
+    CoinInput(c):      CreditCoin(c)
+    CoinReturnInput(): ReturnCredit()
+
+MakeSelection(s as Seq of Char)
+  Selection := s
+
+CreditCoin(c as Integer)
+  Credit := c
+
+ReturnCredit()
+  Credit := 0
+  WriteLine("=========================")
+  WriteLine("Next operation result:")
+  WriteLine("Credit return was pressed")
+  WriteLine("Returned  " + Credit)
+  WriteLine("=========================")
+
+// Constants for every possible input event
+C60   as InputEvent = CoinInput(60)
+C75   as InputEvent = CoinInput(75)
+C150  as InputEvent = CoinInput(150)
+C225  as InputEvent = CoinInput(225)
+CA1   as InputEvent = CodeInput(['A', '1'])
+CB2   as InputEvent = CodeInput(['B', '2'])
+CC3   as InputEvent = CodeInput(['C', '3'])
+CD4   as InputEvent = CodeInput(['D', '4'])
+R     as InputEvent = CoinReturnInput()
+
+Init()
+  Reserve := 780
+  p1.stock := 2
+  p2.stock := 1
+  p3.stock := 1
+  p4.stock := 1
+  Credit := 0
+  Selection := ['0', '0'] // null product
+
+// Diagnostics and debugging
+
+// Printing out the trace of activity
+
+PrintState(B as Set of Product)
+  pcredit = Credit
+  pprice = ProductSelected().price
+  step 1:
+    WriteLine("Selection: " + Selection +
+              " Product: " + ProductSelected().name +
+              " Price: " + pprice)
+  step 2:
+    WriteLine("Credit : " + pcredit)
+  step 3:
+    WriteLine("Reserve: " + Reserve)
+  step 4:
+    WriteLine("Stock Amount, S: " + StockAmount(B))
+  step 5:
+    forall k in B
+      WriteLine( k.name + " stock is " + k.stock )
+  step 6:
+    WriteLine("Invariant: " + (Reserve + StockAmount(B)))
+  step 7:
+    WriteLine("")
+
+// Consistency variable
+
+var Invariant as Integer // for checking consistency condition
+
+// Vending operation
+
+VendingStep(B as Set of Product,i as InputEvent)
+  var Invariant = Reserve + StockAmount(B)
+  step 1:
+    HandleInput(i)
+  step 2:
+    if SaleReady(B) then
+      DispenseProduct()
+      SettleAccount(Change(Credit, ProductSelected().price))
+      WriteLine("=========================")
+      WriteLine("Next Operation result: " )
+      WriteLine("Despensed: " + ProductSelected().name)
+      WriteLine("Change Given: " + Change(Credit,ProductSelected().price))
+      WriteLine("=========================")
+
+
+// Sale Transaction
+
+SaleTxn(B as Set of Product, inputs as Seq of InputEvent)
+  step foreach i in inputs
+    PrintState(B)
+    VendingStep(B,i)
+    WriteLine("Input:   " + i)
+  step
+    UpdateMachine()
+    PrintState(B)
+
+
+// Top-level run
+
+VMachine(B as Set of Product ,inputs as Seq of InputEvent)
+  step
+    Init()
+  step
+    Code := {['A','1'] -> p1,
+             ['B','2'] -> p2,
+             ['C','3'] -> p3,
+             ['D','4'] -> p4,
+             ['0','0'] -> p5 }
+  step
+    Invariant := Reserve + StockAmount(B)
+  step
+    SaleTxn(B,inputs)
+
+var Bin = {p1,p2,p3,p4}
+
+
+// Scenarios
+
+Main()
+  test1 = [ CA1, C60 ] // buy soda with exact change
+  test2 = [ CA1, C75 ] // buy soda, get change
+  test3 = [ CA1, C225, CA1, CA1, CB2] // buy both sodas, then candy
+  test4 = [ CA1, C150, CD4, C225, R ] // buy soda, then try to buy sandwich, return
+  step
+    WriteLine("Buy a can of soda with exact change\n")
+    VMachine(Bin,test1)
+  step
+    WriteLine("\nBuy a can of soda, get change\n")
+    VMachine(Bin,test2)
+  step
+    WriteLine("\nBuy two cans of soda, none left, buy candy w/correct change\n")
+    VMachine(Bin,test3)
+  step
+    WriteLine("\nBuy can of soda, try to buy sandwich, return\n")
+    VMachine(Bin,test4)
+
