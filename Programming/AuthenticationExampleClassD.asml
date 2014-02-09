@@ -1,0 +1,10 @@
+namespace namespace_ClassD
+
+[EntryPoint]
+public class ClassD
+  private const intBegin as Integer=0
+  private const intLength as Integer=4
+  public getID(strCard as String) as Integer
+    require strCard.Length >= intLength and then strCard.Length >= intBegin + intLength
+    ensure result > 0
+    return ToInteger(strCard.Substring(intBegin, intLength))

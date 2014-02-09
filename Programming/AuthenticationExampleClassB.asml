@@ -1,0 +1,12 @@
+namespace namespace_ClassB
+import namespace_ClassC
+import namespace_ClassD
+
+[EntryPoint]
+public class ClassB
+  private var Store as ClassC = new ClassC()
+  private var Extractor as ClassD = new ClassD()
+  public HasAccess(strCard as String, intLevel as Integer) as Boolean
+    require strCard.Length > 0 and intLevel >= 0
+    return (Store.getAuthenticationLevel(Extractor.getID(strCard))>=intLevel)
+

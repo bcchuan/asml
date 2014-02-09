@@ -1,0 +1,7 @@
+namespace AuthenticationExample
+import namespace_ClassA
+
+Main()
+  step A as ClassA = new ClassA()
+  step A.run()
+

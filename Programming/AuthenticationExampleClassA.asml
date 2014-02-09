@@ -1,0 +1,17 @@
+namespace namespace_ClassA
+import namespace_ClassB
+
+[EntryPoint]
+public class ClassA
+  private var Authenticator as ClassB = new ClassB()
+  public run()
+    step Write("Please enter the security level you wish to access: ")
+    step intLevel as Integer = ToInteger(ReadLine())
+    step Write("Please swipe your ID card: ")
+    step strCard as String = ReadLine()
+    step
+      if (Authenticator.HasAccess(strCard, intLevel)) then
+        WriteLine("Access Granted")
+      else
+        WriteLine("Access Denied")
+

@@ -1,0 +1,10 @@
+namespace namespace_ClassC
+
+[EntryPoint]
+public class ClassC
+  private var IDs as Map of Integer to Integer = {1234->4, 2323->2, 1212->10, 4534->7}
+  public getAuthenticationLevel(ID as Integer) as Integer
+    require ID > 0 and then IDs.Contains(ID)
+    ensure result >= 0 and result <= 10
+    return IDs(ID)
+
