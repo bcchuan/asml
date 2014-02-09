@@ -1,0 +1,14 @@
+Main()
+  directory = {"emergency" -> 911, "info" -> 411}
+  step
+    WriteLine(directory("info"))
+  step
+    try
+      WriteLine(directory("hotline"))
+    catch
+      e: WriteLine("key not found")
+
+// Output is:
+//
+// 411
+// key not found
