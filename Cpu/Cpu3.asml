@@ -1,0 +1,203 @@
+// AsmL for a simple CPU, written by BC Chuan, 2014-01-30
+
+namespace Cpu
+
+type Addr = Integer
+type Value = Integer or Instruction
+
+structure Instruction
+  case Add
+    rd as Integer
+    ra as Integer
+    rb as Integer
+  case Ld
+    rd as Integer
+    ri as Integer
+    off as Integer
+  case St
+    rs as Integer
+    ri as Integer
+    off as Integer
+  case Bz
+    rc as Integer
+    off as Integer
+
+structure DecodedInstruction
+  case DAdd
+    rd  as Integer
+    a   as Integer
+    b   as Integer
+  case DLd
+    rd  as Integer
+    adr as Integer
+    off as Integer
+  case DSt
+    val as Integer
+    adr as Integer
+    off as Integer
+  case DBz
+    cond     as Integer
+    branchpc as Integer
+    off      as Integer
+
+interface MemIo
+  lookup(a as Addr) as Value
+  write(a as Addr, v as Value)
+
+class Mem implements MemIo
+  private var memory as Map of Addr to Value = {->}
+  public lookup(a as Addr) as Value
+    return memory(a) 
+  public write(a as Addr, v as Value)
+    memory(a) := v
+
+interface CpuFrontEndIo
+  imemLookup(a as Addr) as Instruction
+  regfLookup(a as Addr) as Integer
+  imemWrite(a as Addr, v as Instruction)
+  regfWrite(a as Addr, v as Integer)
+
+class CpuFrontEnd implements CpuFrontEndIo
+  private var imem = new Mem()
+  private var regf = new Mem()
+  private var pc as Addr = 0
+
+  public imemLookup(a as Addr) as Instruction
+    return imem.lookup(a) as Instruction
+  public regfLookup(a as Addr) as Integer
+    return regf.lookup(a) as Integer
+
+  public imemWrite(a as Addr, v as Instruction)
+    imem.write(a, v)
+  public regfWrite(a as Addr, v as Integer)
+    regf.write(a, v)
+
+  public setPC(v as Addr)
+    pc := v
+
+  fetchAndDec(inst as Instruction, backend as CpuBackEnd)
+    if (not backend.stall(inst))
+      setPC(pc + 1)
+      match inst
+        Add(rd, ra, rb) :
+          backend.exeqEnq(DAdd(rd, regfLookup(ra), regfLookup(rb)))
+          backend.adrqEnq(rd)
+          WriteLine("Add rd="+rd+" ra="+ra+" rb="+rb+"")
+        Ld(rd, ri, off) :
+          backend.exeqEnq(DLd(rd, regfLookup(ri), off))
+          backend.adrqEnq(rd)
+          WriteLine("Ld  rd="+rd+" ri="+ri+" off="+off+"")
+        St(rs, ri, off) :
+          backend.exeqEnq(DSt(regfLookup(rs), regfLookup(ri), off))
+          WriteLine("St  rs="+rs+" ri="+ri+" off="+off+"")
+        Bz(rc, off)     :
+          backend.exeqEnq(DBz(regfLookup(rc), pc, off))
+          WriteLine("Bz  rc="+rc+" off="+off+"")
+
+  Run(backend as CpuBackEnd)
+    let inst = imemLookup(pc)
+    step fetchAndDec(inst, backend)
+
+interface CpuBackEndIo
+  dmemLookup(a as Addr) as Integer
+  dmemWrite(a as Addr, v as Integer)
+
+class CpuBackEnd implements CpuBackEndIo
+  private var dmem = new Mem()
+  private var exeq as Seq of DecodedInstruction = []
+  private var adrq as Seq of Integer = []
+
+  public dmemLookup(a as Addr) as Integer
+    return dmem.lookup(a) as Integer
+  public dmemWrite(a as Addr, v as Integer)
+    dmem.write(a, v)
+
+  public function exeqEnq (v as DecodedInstruction)
+    exeq := exeq + [v]
+  public function adrqEnq (v as Integer)
+    adrq := adrq + [v]
+  public function exeqDeq () as DecodedInstruction
+    exeq := Tail(exeq)
+    return Head(exeq)
+  public function adrqDeq () as Integer
+    adrq := Tail(adrq)
+    return Head(adrq)
+  public function exeqClear ()
+    exeq := []
+
+  public function stall(inst as Instruction) as Boolean
+    match inst
+      Add(rd, ra, rb) : return ((ra in adrq) or (rb in adrq))
+      Ld(rd, ri, off) : return ((ri in adrq))
+      St(rs, ri, off) : return ((rs in adrq))
+      Bz(rc, off)     : return ((rc in adrq))
+
+  execAndWb(frontend as CpuFrontEnd)
+    if Size(exeq) > 0
+      match exeqDeq()
+        DAdd(rd, a, b) :
+          frontend.regfWrite(rd, a+b)
+          adrqDeq()
+        DLd(rd, adr, off) :
+          frontend.regfWrite(rd, dmemLookup(adr+off))
+          adrqDeq()
+        DSt(val, adr, off) :
+          dmemWrite(adr+off, val)
+        DBz(cond, branchpc, off) :
+          if cond = 0
+            frontend.setPC(branchpc + off)
+            exeqClear()
+
+  Run(frontend as CpuFrontEnd)
+    step execAndWb(frontend)
+
+interface CpuCoreIo
+  imemLookup(a as Addr) as Instruction
+  dmemLookup(a as Addr) as Integer
+  regfLookup(a as Addr) as Integer
+  imemWrite(a as Addr, v as Instruction)
+  dmemWrite(a as Addr, v as Integer)
+  regfWrite(a as Addr, v as Integer)
+
+class CpuCore implements CpuCoreIo
+  private var frontend = new CpuFrontEnd()
+  private var backend = new CpuBackEnd()
+
+  public imemLookup(a as Addr) as Instruction
+    return frontend.imemLookup(a) as Instruction
+  public dmemLookup(a as Addr) as Integer
+    return backend.dmemLookup(a) as Integer
+  public regfLookup(a as Addr) as Integer
+    return frontend.regfLookup(a) as Integer
+
+  public imemWrite(a as Addr, v as Instruction)
+    frontend.imemWrite(a, v)
+  public dmemWrite(a as Addr, v as Integer)
+    backend.dmemWrite(a, v)
+  public regfWrite(a as Addr, v as Integer)
+    frontend.regfWrite(a, v)
+
+  Run()
+    step
+      step frontend.Run(backend)
+      step backend.Run(frontend)
+
+Main()
+  step c = new CpuCore()
+  step c.imemWrite(0, Add(0,0,0))
+  step c.imemWrite(1, Ld(1,1,1))
+  step c.imemWrite(2, St(2,2,2))
+  step c.imemWrite(3, Bz(3,3))
+  step c.dmemWrite(0, 0)
+  step c.dmemWrite(1, 0)
+  step c.dmemWrite(2, 0)
+  step c.dmemWrite(3, 0)
+  step c.regfWrite(0, 0)
+  step c.regfWrite(1, 0)
+  step c.regfWrite(2, 0)
+  step c.regfWrite(3, 0)
+  step c.Run()
+  step c.Run()
+  step c.Run()
+  step c.Run()
+
