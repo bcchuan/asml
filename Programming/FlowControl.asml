@@ -1,0 +1,77 @@
+namespace FlowControl
+
+const MAX_CREDIT_LIMIT as Integer = 64
+
+class Transmitter
+  var CL as Integer = 0 // Credit Limit
+  var CC as Integer = 0 // Credit Consumed
+
+  Reset()
+    CL := 0
+    CC := 0
+
+  ReceiveFcUpdate(fc as Integer)
+    CL := fc
+
+  IsSendAllowed() as Boolean
+    let CR = CC
+    let CA = CL - CC
+    let CB = CC - CL
+    if (CL > CC)
+      return (CA > 0)
+    else
+      return (CB > 0)
+
+  TransmitTLP(c as Integer)
+    require IsSendAllowed()
+    CC := (CC + c) mod (2 * MAX_CREDIT_LIMIT)
+
+  DumpInfo()
+    WriteLine("CL=" + CL + " CC=" + CC + " S=" + IsSendAllowed())
+
+Main()
+  tx = new Transmitter
+  step
+    tx.Reset()
+    tx.DumpInfo()
+  step
+    tx.ReceiveFcUpdate(64)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    tx.ReceiveFcUpdate(0)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    if tx.IsSendAllowed()
+      tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    tx.DumpInfo()
+
