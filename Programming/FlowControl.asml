@@ -16,11 +16,11 @@ class Transmitter
   IsSendAllowed() as Boolean
     let CR = CC
     let CA = CL - CC
-    let CB = CC - CL
-    if (CL > CC)
+    let CB = (2 * MAX_CREDIT_LIMIT) + CA
+    if (CL >= CC)
       return (CA > 0)
     else
-      return (CB > 0)
+      return (CB >= 0)
 
   TransmitTLP(c as Integer)
     require IsSendAllowed()
@@ -71,6 +71,9 @@ Main()
   step
     if tx.IsSendAllowed()
       tx.TransmitTLP(16)
+    tx.DumpInfo()
+  step
+    tx.ReceiveFcUpdate(32)
     tx.DumpInfo()
   step
     tx.DumpInfo()
