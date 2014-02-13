@@ -1,0 +1,210 @@
+abstract class UseCase 
+  interface Event 
+  delegate Scenario() 
+  abstract property Scenarios as Set of Scenario 
+    get // read-only property 
+  var events as Seq of Event = [] 
+  DO(evnt as Event) // fire event 
+    events := events + [evnt] 
+  Play(iters as Integer) as Seq of Event 
+    if iters = 0 
+      return events 
+    else 
+      var cands = Scenarios 
+      var found = false 
+      step while not found and cands <> {} 
+        choose scenario in cands 
+          try 
+            scenario() // calling the delegate 
+            found := true 
+          catch 
+            AssertionFailedException: 
+              // failed == scenario not enabled 
+              remove scenario from cands 
+      step 
+        if found 
+          return Play(iters-1) 
+        else // no scenario enabled 
+          return events  
+
+
+class CTASWeatherControl extends UseCase
+  enum STATUS
+    PREUPDATING
+    UPDATING
+    POSTUPDATING
+    POSTREVERTING
+    DONE
+  type CLIENTID = Integer
+  structure ENV implements Event
+    case NEW_FORECAST
+  structure CM implements Event
+    destination as CLIENTID
+    case CLOSE_CONNECTION
+    case GET_NEW_WEATHER
+    case USE_NEW_WEATHER
+    case REVERT_WEATHER
+  structure CL implements Event
+    source as CLIENTID
+    case CONNECT
+    case RECEIVED_GET
+      success as Boolean
+    case RECEIVED_USE
+      success as Boolean
+    case RECEIVED_REVERT
+      success as Boolean
+
+class CTASWeatherControl
+  class SOCKET
+    id as CLIENTID
+    var status as STATUS
+    public override ToString() as String?
+      return "#" + id
+
+class CTASWeatherControl
+  var status as STATUS = DONE
+  var sockets as Set of SOCKET = {}
+
+class CTASWeatherControl
+  ConnectClient(id as CLIENTID)
+    require status = DONE and
+      not exists s in sockets
+        where s.id = id
+    DO( CL.CONNECT(id) )
+    let s = new SOCKET(id,DONE)
+    add s to sockets
+
+class CTASWeatherControl
+  NewForecast()
+    require status = DONE
+    step
+      DO( ENV.NEW_FORECAST )
+      status := UPDATING
+    step foreach s in sockets
+      DO( CM.GET_NEW_WEATHER(s.id) )
+      s.status := UPDATING
+
+class CTASWeatherControl
+  ReceivedGet(s as SOCKET, success as Boolean)
+    require status = UPDATING and
+      s.status = UPDATING
+    step DO( CL.RECEIVED_GET(s.id,success) )
+    step
+      if success
+        s.status := POSTUPDATING
+      else
+        status := POSTREVERTING
+        step foreach s' in sockets
+          DO( CM.REVERT_WEATHER(s'.id) )
+          s'.status := POSTREVERTING
+
+class CTASWeatherControl
+  AllReceivedGet()
+    require status = UPDATING and
+      (forall s in sockets
+        holds s.status = POSTUPDATING)
+    status := POSTUPDATING
+    step foreach s in sockets
+      DO( CM.USE_NEW_WEATHER(s.id) )
+
+class CTASWeatherControl
+  ReceivedUse(s as SOCKET, success as Boolean)
+    require status = POSTUPDATING and
+      s.status = POSTUPDATING
+    step DO( CL.RECEIVED_USE(s.id,success) )
+    step if success
+           s.status := DONE
+         else
+           status := DONE
+    step foreach s' in sockets
+           DO(CM.CLOSE_CONNECTION(s'.id))
+           remove s' from sockets
+
+class CTASWeatherControl
+  AllReceivedUse()
+    require status = POSTUPDATING and
+      (forall s in sockets holds s.status = DONE)
+    status := DONE
+
+class CTASWeatherControl
+  ReceivedRevert(s as SOCKET,success as Boolean)
+    require status = POSTREVERTING and
+      s.status = POSTREVERTING
+    step DO( CL.RECEIVED_REVERT(s.id,success) )
+    step if success
+           s.status := DONE
+         else
+           status := DONE
+    step foreach s' in sockets
+           DO(CM.CLOSE_CONNECTION(s'.id))
+           remove s' from sockets
+  AllReceivedRevert()
+    require status = POSTREVERTING and
+      (forall s in sockets holds s.status = DONE)
+    status := DONE
+
+class CTASWeatherControl
+  ConnectClientChoice()
+    choose id in {1,2,3}
+      ConnectClient(id)
+  ReceivedGetChoice()
+    choose s in sockets, x in enum of Boolean
+      ReceivedGet(s,x)
+  ReceivedUseChoice()
+    choose s in sockets, x in enum of Boolean
+      ReceivedUse(s,x)
+  ReceivedRevertChoice()
+    choose s in sockets, x in enum of Boolean
+      ReceivedRevert(s,x)
+
+class CTASWeatherControl
+  override property Scenarios as Set of Scenario
+    get
+      return {
+        new Scenario(ConnectClientChoice),
+        new Scenario(NewForecast),
+        new Scenario(ReceivedGetChoice),
+        new Scenario(AllReceivedGet),
+        new Scenario(ReceivedUseChoice),
+        new Scenario(AllReceivedUse),
+        new Scenario(ReceivedRevertChoice),
+        new Scenario(AllReceivedRevert)}
+
+wc = new CTASWeatherControl()
+
+Main()
+  wc.Play(11)
+
+//Each additional execution would produce new variations of the choices of parameterized scenarios.
+//
+//[CL.CONNECT(client=2),
+// CL.CONNECT(client=1),
+// ENV.NEW_FORECAST(),
+// CM.GET_NEW_WEATHER(client=2),
+// CM.GET_NEW_WEATHER(client=1),
+// CL.RECEIVED_GET(client=1,sucess=True),
+// CL.RECEIVED_GET(client=2,sucess=False),
+// CM.REVERT_WEATHER(client=1),
+// CM.REVERT_WEATHER(client=2),
+// CL.RECEIVED_REVERT(client=2,success=True),
+// CL.RECEIVED_REVERT(client=1,success=False),
+// CM.CLOSE_CONNECTION(client=1),
+// CM.CLOSE_CONNECTION(client=2)]
+
+//Generating Tests
+//----------------
+//class CTASWeatherControl
+//  override ToString() as String?
+//    return "C"
+ 
+property CTASAbstr as (STATUS, Map of STATUS to Integer)
+  get return (wc.status,
+    { st ->
+        [st|so in wc.sockets
+          where so.status = st].Length
+    | st in enum of STATUS })
+ 
+property CTASFilter as Boolean
+  get return wc.status <> STATUS.DONE
+    implies Size(wc.sockets) > 1
+
