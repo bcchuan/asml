@@ -1,0 +1,26 @@
+// An algorithm that calculates the reachable nodes of a directed, possibly
+// cyclic, graph.
+//
+// The local variable reachable is a set of nodes that have been seen so far.
+//
+// The algorithm includes sequential aspects (iterating after each update of
+// the nodes on the frontier) and concurrent aspects (visiting newly visible
+// nodes).
+//
+// The Main() method does not include steps. From its point of view, the
+// program is entirely functional. It sees only the cumulative effect of
+// the sequential steps that occurred in the subprogram that calculated the
+// reachable nodes.
+
+reachable (root as Integer, arcs as Set of (Integer, Integer)) as Set of Integer
+  var reachable = {root}
+  step until fixpoint     // sequential step
+    forall (l, r) in arcs   // parallel update
+      if l in reachable and r notin reachable then
+        add r to reachable
+  step
+    return reachable
+
+Main()
+  arcs = {(1,2), (2,3), (4,5), (3,1), (10,9)}
+  WriteLine(reachable(3, arcs)) // prints {3,2,1}
