@@ -1,0 +1,14 @@
+namespace LookupState
+
+var cityState as Map of String to String = {"Athens"->"GA", "Paris"-> "TX"}
+
+Lookup(state as String)
+  if state in Keys(cityState)
+    WriteLine(cityState(state))
+  else
+    WriteLine("Unknown state")
+
+Main()
+  Lookup("Athens")
+  Lookup("California")
+
