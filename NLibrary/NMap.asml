@@ -1,7 +1,11 @@
 class NMap of T to S
   private var m as Map of T to S = {->}
-  Lookup(t as T) as S
-    return m(t)
+  TryGetValue(t as T) as (Boolean, S or Null)
+    try
+      return (true, m(t))
+    catch
+      IndexOutOfBoundsException:
+        return (false, null)
   Add(t as T, s as S)
     m(t) := s
   Contains(t as T, s as S) as Boolean
@@ -40,8 +44,8 @@ Main()
   step WriteLine("nmap.Keys() = " + nmap.Keys())
   step WriteLine("nmap.Values() = " + nmap.Values())
   step WriteLine("nmap.Count() = " + nmap.Count())
-  step WriteLine("nmap.Lookup(Athens) = " + nmap.Lookup("Athens"))
-  step WriteLine("nmap.Lookup(Paris) = " + nmap.Lookup("Paris"))
+  step WriteLine("nmap.TryGetValue(Athens) = " + nmap.TryGetValue("Athens"))
+  step WriteLine("nmap.TryGetValue(California) = " + nmap.TryGetValue("California"))
   step WriteLine("nmap.ContainsKey(Athens) = " + nmap.ContainsKey("Athens"))
   step WriteLine("nmap.ContainsKey(California) = " + nmap.ContainsKey("California"))
   step WriteLine("nmap.Contains(Paris, TX) = " + nmap.Contains("Athens", "TX"))
