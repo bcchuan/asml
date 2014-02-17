@@ -1,0 +1,31 @@
+class NMap of T to S
+  private var m as Map of T to S = {->}
+  Add(t as T, s as S)
+    m(t) := s
+  Contains(t as T, s as S) as Boolean
+    return exists i in Keys(m) where i = t and
+           exists j in Values(m) where j = s
+  ContainsKey(t as T) as Boolean
+    return exists i in Keys(m) where i = t
+  RemoveKey(t as T) as Map of T to S
+    var r = {i->j | i in Keys(m), j in Values(m) where i <> t}
+    m := r
+    return r
+  Count() as Integer
+    return Size(m)
+  public override ToString() as String?
+    return m.ToString()
+
+Main()
+  nmap = new NMap of String to String
+  step nmap.Add("Athens", "GA")
+  step nmap.Add("Paris", "TX")
+  step WriteLine("nmap = " + nmap)
+  step WriteLine("nmap.Count() = " + nmap.Count())
+  step WriteLine("nmap.ContainsKey(Athens) = " + nmap.ContainsKey("Athens"))
+  step WriteLine("nmap.ContainsKey(California) = " + nmap.ContainsKey("California"))
+  step WriteLine("nmap.Contains(Paris, TX) = " + nmap.Contains("Athens", "TX"))
+  step WriteLine("nmap.RemoveKey(Athens) = " + nmap.RemoveKey("Athens"))
+  step WriteLine("nmap.Contains(Athens, GA) = " + nmap.Contains("Athens", "GA"))
+  step WriteLine("nmap = " + nmap)
+
