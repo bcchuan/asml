@@ -1,6 +1,7 @@
 namespace LookupState
 
-var cityState as Map of String to String = {"Athens"->"GA", "Paris"-> "TX"}
+var cityState as Map of String to String = {->}
+var Extension as Map of String to Integer = {->}
 
 Lookup(state as String)
   if state in Keys(cityState)
@@ -9,6 +10,17 @@ Lookup(state as String)
     WriteLine("Unknown state")
 
 Main()
-  Lookup("Athens")
-  Lookup("California")
+  step
+    cityState("Athens") := "GA"
+    cityState("Paris")  := "TX"
+  step
+    Lookup("Athens")
+    Lookup("California")
+    WriteLine(cityState)
+  step
+    Extension("Bob") := 100
+    Extension("Carla") := 101
+  step
+    WriteLine("Bob's extension is " + Extension("Bob"))
+    WriteLine("Carla's extension is " + Extension("Carla"))
 
