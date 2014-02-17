@@ -7,6 +7,10 @@ class NMap of T to S
            exists j in Values(m) where j = s
   ContainsKey(t as T) as Boolean
     return exists i in Keys(m) where i = t
+  Remove(t as T, s as S) as Map of T to S
+    var r = {i->j | i in Keys(m), j in Values(m) where i <> t and j <> s}
+    m := r
+    return r
   RemoveKey(t as T) as Map of T to S
     var r = {i->j | i in Keys(m), j in Values(m) where i <> t}
     m := r
@@ -27,5 +31,7 @@ Main()
   step WriteLine("nmap.Contains(Paris, TX) = " + nmap.Contains("Athens", "TX"))
   step WriteLine("nmap.RemoveKey(Athens) = " + nmap.RemoveKey("Athens"))
   step WriteLine("nmap.Contains(Athens, GA) = " + nmap.Contains("Athens", "GA"))
+  step WriteLine("nmap = " + nmap)
+  step WriteLine("nmap.Remove(Paris, TX) = " + nmap.Remove("Athens", "TX"))
   step WriteLine("nmap = " + nmap)
 
