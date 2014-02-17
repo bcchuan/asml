@@ -9,8 +9,8 @@ class NMap of T to S
   Add(t as T, s as S)
     m(t) := s
   Contains(t as T, s as S) as Boolean
-    return exists i in Keys(m) where i = t and
-           exists j in Values(m) where j = s
+    let (b, v) = TryGetValue(t)
+    return b and (v = s)
   ContainsKey(t as T) as Boolean
     return exists i in Keys(m) where i = t
   Remove(t as T, s as S) as Map of T to S
@@ -48,7 +48,7 @@ Main()
   step WriteLine("nmap.TryGetValue(California) = " + nmap.TryGetValue("California"))
   step WriteLine("nmap.ContainsKey(Athens) = " + nmap.ContainsKey("Athens"))
   step WriteLine("nmap.ContainsKey(California) = " + nmap.ContainsKey("California"))
-  step WriteLine("nmap.Contains(Paris, TX) = " + nmap.Contains("Athens", "TX"))
+  step WriteLine("nmap.Contains(Paris, TX) = " + nmap.Contains("Paris", "TX"))
   step WriteLine("nmap.RemoveKey(Athens) = " + nmap.RemoveKey("Athens"))
   step WriteLine("nmap.Contains(Athens, GA) = " + nmap.Contains("Athens", "GA"))
   step WriteLine("nmap = " + nmap)
