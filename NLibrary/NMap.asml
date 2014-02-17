@@ -17,6 +17,14 @@ class NMap of T to S
     return r
   Count() as Integer
     return Size(m)
+  EmptyMap() as Map of T to S
+    return {->}
+  IsEmpty() as Boolean
+    return Size(m) = 0
+  Keys() as Set of T
+    return Keys(m)
+  Values() as Set of S
+    return Values(m)
   public override ToString() as String?
     return m.ToString()
 
@@ -24,7 +32,11 @@ Main()
   nmap = new NMap of String to String
   step nmap.Add("Athens", "GA")
   step nmap.Add("Paris", "TX")
+  step WriteLine("nmap.EmptyMap() = " + nmap.EmptyMap())
   step WriteLine("nmap = " + nmap)
+  step WriteLine("nmap.IsEmpty() = " + nmap.IsEmpty())
+  step WriteLine("nmap.Keys() = " + nmap.Keys())
+  step WriteLine("nmap.Values() = " + nmap.Values())
   step WriteLine("nmap.Count() = " + nmap.Count())
   step WriteLine("nmap.ContainsKey(Athens) = " + nmap.ContainsKey("Athens"))
   step WriteLine("nmap.ContainsKey(California) = " + nmap.ContainsKey("California"))
@@ -34,4 +46,5 @@ Main()
   step WriteLine("nmap = " + nmap)
   step WriteLine("nmap.Remove(Paris, TX) = " + nmap.Remove("Athens", "TX"))
   step WriteLine("nmap = " + nmap)
+  step WriteLine("nmap.IsEmpty() = " + nmap.IsEmpty())
 
