@@ -14,11 +14,11 @@ class NMap of T to S
   ContainsKey(t as T) as Boolean
     return exists i in Keys(m) where i = t
   Remove(t as T, s as S) as Map of T to S
-    var r = {i->j | i in Keys(m), j in Values(m) where i <> t and j <> s}
+    var r = {i->m(i) | i in Keys(m) where i <> t and m(i) <> s}
     m := r
     return r
   RemoveKey(t as T) as Map of T to S
-    var r = {i->j | i in Keys(m), j in Values(m) where i <> t}
+    var r = {i->m(i) | i in Keys(m) where i <> t}
     m := r
     return r
   Count() as Integer
