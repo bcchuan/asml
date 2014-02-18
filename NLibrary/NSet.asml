@@ -1,0 +1,38 @@
+class NSet of T
+  private var s as Set of T = {}
+  Add(t as T) as Set of T
+    var r = s union {t}
+    s := r
+    return r
+  Contains(t as T) as Boolean
+    return (exists i in s where i = t)
+  Remove(t as T) as Set of T
+    var r = {i | i in s where i <> t}
+    s := r
+    return r
+  Count() as Integer
+    return Size(s)
+  EmptySet() as Set of T
+    return {}
+  IsEmpty() as Boolean
+    return Size(s) = 0
+  public override ToString() as String?
+    return s.ToString()
+
+Main()
+  nset = new NSet of String
+  step nset.Add("Athens")
+  step nset.Add("Paris")
+  step WriteLine("nset.EmptySet() = " + nset.EmptySet())
+  step WriteLine("nset = " + nset)
+  step WriteLine("nset.IsEmpty() = " + nset.IsEmpty())
+  step WriteLine("nset.Count() = " + nset.Count())
+  step WriteLine("nset.Contains(Paris) = " + nset.Contains("Paris"))
+  step WriteLine("nset.Contains(California) = " + nset.Contains("California"))
+  step WriteLine("nset.Remove(Athens) = " + nset.Remove("Athens"))
+  step WriteLine("nset.Contains(Athens) = " + nset.Contains("Athens"))
+  step WriteLine("nset = " + nset)
+  step WriteLine("nset.Remove(Paris) = " + nset.Remove("Paris"))
+  step WriteLine("nset = " + nset)
+  step WriteLine("nset.IsEmpty() = " + nset.IsEmpty())
+
