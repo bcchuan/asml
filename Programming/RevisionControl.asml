@@ -40,6 +40,27 @@ class NMap of T to S
   public override ToString() as String?
     return m.ToString()
 
+class NSet of T
+  private var s as Set of T = {}
+  Add(t as T) as Set of T
+    var r = s union {t}
+    s := r
+    return r
+  Contains(t as T) as Boolean
+    return (exists i in s where i = t)
+  Remove(t as T) as Set of T
+    var r = {i | i in s where i <> t}
+    s := r
+    return r
+  Count() as Integer
+    return Size(s)
+  EmptySet() as Set of T
+    return {}
+  IsEmpty() as Boolean
+    return Size(s) = 0
+  public override ToString() as String?
+    return s.ToString()
+
 enum Op 
   Add
   Delete
@@ -77,15 +98,19 @@ class User
   version as NMap of String to Integer
   revisions as NMap of String to NMap of String to Op
   conflicts as NMap of String to Set of String 
-  commitPending as Set of String 
- 
+  commitPending as NSet of String 
+
   CommitPending(user as String) as Boolean
+    return commitPending.Contains(user)
  
   IsUser(user as String) as Boolean
+    return version.ContainsKey(user)
  
   CanStep(user as String) as Boolean
+    return IsUser(user) and not CommitPending(user)
  
   Users() as Set of String
+    return version.Keys()
  
   [Action]
   Synchronize(user as String)
