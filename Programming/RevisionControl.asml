@@ -1,154 +1,28 @@
 namespace RevisionControl
 
-////////////////////////////////////////////////////////
-// Constants and Data Types Declaration
-////////////////////////////////////////////////////////
+import Repository
+import User
 
-class NMap of T to S
-  private var m as Map of T to S = {->}
-  TryGetValue(t as T) as (Boolean, S or Null)
-    try
-      return (true, m(t))
-    catch
-      IndexOutOfBoundsException:
-        return (false, null)
-  Add(t as T, s as S)
-    m(t) := s
-  Contains(t as T, s as S) as Boolean
-    let (b, v) = TryGetValue(t)
-    return b and (v = s)
-  ContainsKey(t as T) as Boolean
-    return exists i in Keys(m) where i = t
-  Remove(t as T, s as S) as Map of T to S
-    var r = {i->m(i) | i in Keys(m) where i <> t and m(i) <> s}
-    m := r
-    return r
-  RemoveKey(t as T) as Map of T to S
-    var r = {i->m(i) | i in Keys(m) where i <> t}
-    m := r
-    return r
-  Count() as Integer
-    return Size(m)
-  EmptyMap() as Map of T to S
-    return {->}
-  IsEmpty() as Boolean
-    return Size(m) = 0
-  Keys() as Set of T
-    return Keys(m)
-  Values() as Set of S
-    return Values(m)
-  public override ToString() as String?
-    return m.ToString()
-
-class NSet of T
-  private var s as Set of T = {}
-  Add(t as T) as Set of T
-    var r = s union {t}
-    s := r
-    return r
-  Contains(t as T) as Boolean
-    return (exists i in s where i = t)
-  Remove(t as T) as Set of T
-    var r = {i | i in s where i <> t}
-    s := r
-    return r
-  Count() as Integer
-    return Size(s)
-  EmptySet() as Set of T
-    return {}
-  IsEmpty() as Boolean
-    return Size(s) = 0
-  public override ToString() as String?
-    return s.ToString()
-
-enum Op 
-  Add
-  Delete
-  Change
-
-class Revision
-  op as Op
-  revisionNumber as Integer
-
-////////////////////////////////////////////////////////
-// State Variable: Repository
-////////////////////////////////////////////////////////
-
-class Repository
-  var currentRevision as Integer = 0
-  var db as NMap of String to Seq of Revision
-
-  FileVersion(file as String) as Integer
-    let (success, revisions) = db.TryGetValue(file)
-    if success
-      return Head(revisions).revisionNumber
-    else
-      -1
- 
-  FileExists(file as String, version as Integer) as Boolean
-    let (success, revisions) = db.TryGetValue(file)
-    return success and (exists r in revisions where r.revisionNumber <= version and r.op <> Delete)
-
-////////////////////////////////////////////////////////
-// State Variable: User
-////////////////////////////////////////////////////////
-
-class User
-
-  version as NMap of String to Integer
-  revisions as NMap of String to NMap of String to Op
-  conflicts as NMap of String to Set of String 
-  commitPending as NSet of String 
-
-  CommitPending(user as String) as Boolean
-    return commitPending.Contains(user)
- 
-  IsUser(user as String) as Boolean
-    return version.ContainsKey(user)
- 
-  CanStep(user as String) as Boolean
-    return IsUser(user) and not CommitPending(user)
- 
-  Users() as Set of String
-    return version.Keys()
- 
-  [Action]
-  Synchronize(user as String)
- 
-  [Action]
-  Edit(user as String, file as String, op as Op)
- 
-  [Action]
-  Revert(user as String, file as String)
- 
-  [Action]
-  Commit(user as String)
- 
-  [Action]
-  MustResolve(user as String, files as Set of String)
- 
-  [Action]
-  Resolve(user as String, file as String)
- 
-  [Action]
-  CommitComplete(user as String, newVersion as Integer)
- 
-////////////////////////////////////////////////////////
-// Main Program
-////////////////////////////////////////////////////////
 Main()
   WriteLine("Hello Revision Control!")
-  //Synchronize("alice")
-  //Edit("alice", "file1", Op("Add"))
-  //Commit("alice")
-  //CommitComplete("alice", 1)
-  //Synchronize("bob")
-  //Edit("bob", "file1", Op("Change"))
-  //Edit("alice", "file1", Op("Change"))
-  //Commit("alice")
-  //CommitComplete("alice", 2)
-  //Commit("bob")
-  //MustResolve("bob", Set<string>("file1"))
-  //Resolve("bob", "file1")
-  //Commit("bob")
-  //CommitComplete("bob", 3)
+  Synchronize("alice")
+//Edit("alice", "file1", Op("Add"))
+  Commit("alice")
+//CommitComplete("alice", 1)
+//Synchronize("bob")
+//Edit("bob", "file1", Op("Change"))
+//Edit("alice", "file1", Op("Change"))
+//Commit("alice")
+//CommitComplete("alice", 2)
+//Commit("bob")
+//MustResolve("bob", {"file1"})
+//Resolve("bob", "file1")
+//Commit("bob")
+//CommitComplete("bob", 3)
+  step
+    WriteLine("Repository.currentRevision=" + Repository.currentRevision)
+    WriteLine("User.commitPending=" + User.commitPending)
+//step
+//  add "alice" to User.commitPending
+//step
+//  WriteLine("User.commitPending=" + User.commitPending)

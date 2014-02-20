@@ -1,0 +1,30 @@
+namespace Repository
+
+enum Op 
+  Add
+  Delete
+  Change
+
+structure Revision
+  op as Op
+  revisionNumber as Integer
+
+var currentRevision as Integer = 0
+var db as Map of String to Seq of Revision = {->}
+
+FileVersion(file as String) as Integer
+  try
+    let revisions = db(file)
+    return Head(revisions).revisionNumber
+  catch
+    IndexOutOfBoundsException:
+      return -1
+ 
+FileExists(file as String, version as Integer) as Boolean
+  try
+    let revisions = db(file)
+    return (exists r in revisions where r.revisionNumber <= version and r.op <> Delete)
+  catch
+    IndexOutOfBoundsException:
+      return false
+

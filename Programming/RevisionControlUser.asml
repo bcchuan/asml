@@ -1,0 +1,57 @@
+namespace User
+
+import Repository
+
+var version as Map of String to Integer = {->}
+var revisions as Map of String to Map of String to Op = {->}
+var conflicts as Map of String to Set of String = {->}
+var commitPending as Set of String = {}
+
+CommitPending(user as String) as Boolean
+  return (exists i in commitPending where i = user)
+ 
+IsUser(user as String) as Boolean
+  return (exists i in Keys(version) where i = user)
+ 
+CanStep(user as String) as Boolean
+  return IsUser(user) and not CommitPending(user)
+ 
+Users() as Set of String
+  return Keys(version)
+ 
+[Action]
+Synchronize(user as String)
+  require not CommitPending(user)
+  step
+    let newVersion = Repository.currentRevision
+    if IsUser(user)
+      //IdentifyConflicts(user, version(user))
+      version(user) := newVersion
+    else
+      version(user) := newVersion
+      revisions(user) := {->}
+      //conflicts(user) := []
+
+[Action]
+Edit(user as String, file as String, op as Op)
+ 
+[Action]
+Revert(user as String, file as String)
+ 
+[Action]
+Commit(user as String)
+  //require CanStep(user)
+  step
+    add user to commitPending
+    //IdentifyConflicts(user, version(user))
+    version(user) := Repository.currentRevision
+  
+[Action]
+MustResolve(user as String, files as Set of String)
+ 
+[Action]
+Resolve(user as String, file as String)
+ 
+[Action]
+CommitComplete(user as String, newVersion as Integer)
+ 
