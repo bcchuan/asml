@@ -1,0 +1,26 @@
+structure Node
+  name as String
+
+Shortest(
+  s as Node, // start node
+  nodes as Set of Node,
+  edges as Map of (Node, Node) to Integer
+  ) as Map of Node to Integer
+  var S = {s -> 0}
+  step until fixpoint
+    forall n in nodes where n <> s
+      E = {S(m) + edges(m, n) | m in nodes where m in S and (m, n) in edges}
+      if Size(E) > 0 then S(n) := min x | x in E
+  step
+    return S
+
+Main()
+  a = Node("A")
+  b = Node("B")
+  c = Node("C")
+  d = Node("D")
+  let nodes as Set of Node = {a, b, c, d}
+  edges = {(a, b) -> 10, (a, c) -> 15, (b, d) -> 12, (c, d) -> 6}
+
+  WriteLine(Shortest(a, nodes, edges))
+    // The output result is {A->0, B->10, C->15, D->21} 
