@@ -1,0 +1,64 @@
+enum State_t
+  WaitForCellAvailable
+  TransmitCell
+  CloseTxWindow
+  Ending
+
+var TxClav as Boolean  // Cell accept    (from PHY)
+var TxEnb  as Boolean  // Enable         (to PHY)
+var TxData as Integer  // Cell data byte (to PHY)
+var TxSoC  as Boolean  // Start of cell  (to PHY)
+
+[Action]
+SendCell (StartCellNo as Integer,
+          EndCellNo   as Integer,
+          SrcCell     as Seq of Integer)
+
+  var CState as State_t = WaitForCellAvailable
+  var Cn     as Integer = StartCellNo
+  var Bn     as Integer = 1
+
+  step while (CState <> Ending)
+    match CState
+
+      WaitForCellAvailable:
+        if TxClav then CState := TransmitCell
+
+      TransmitCell:
+        TxEnb := true
+
+        if (Bn < 53) then Bn := Bn + 1
+        else Bn := 1
+
+        if (Bn = 1) then TxSoC := true
+        else TxSoC := false
+
+        TxData := SrcCell((Cn-1)*53+Bn)
+        WriteLine("Cn=" + Cn + " Bn=" + Bn + " TxData=" + TxData)
+
+        if (Bn = 53) then
+          Cn := Cn + 1
+          if ((Cn = EndCellNo) or (TxClav = false)) then
+            CState := CloseTxWindow
+
+      CloseTxWindow:
+        TxEnb := false
+        CState := Ending
+
+Main()
+  WriteLine("Hello Utopia Transactor")
+  step
+    TxClav := false
+    TxEnb  := false
+    TxSoC  := false
+    TxData := 0
+  step     
+    TxClav := true
+  step     
+    let d = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,
+             30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54]
+    SendCell(1, 1, d)
+  step     
+    TxClav := false
+    WriteLine("Hello Utopia Transactor")
+
