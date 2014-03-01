@@ -1,0 +1,41 @@
+type Object
+
+class Publisher
+  public var subscribers as Set of Subscriber = {}
+  Add (sub as Object)
+    add {sub as Subscriber} to subscribers
+  [Action]
+  Publish(data as Object)
+    forall sub in subscribers
+      sub.Add(data)
+
+class Subscriber
+   public var mbox as Seq of Object = []
+ //Subscriber(publisher as Publisher)
+ //  publisher.Add(me)
+   Add (data as Object)
+     mbox := mbox + [data]
+   [Action]
+   Handle (data as Object)
+     require mbox.Count > 0 and
+             Head(mbox) = data
+     mbox := Tail(mbox)
+
+var pub as Publisher
+var sub as Subscriber
+
+Main()
+  WriteLine("Hello Publisher Subscriber")
+  pub = new Publisher()
+  sub = new Subscriber()
+  step
+    pub.Add(sub)
+  step
+    WriteLine(pub.subscribers)
+    pub.Publish("A")
+  step
+    WriteLine(sub.mbox)
+    sub.Handle("A")
+  step
+    WriteLine(sub.mbox)
+  
