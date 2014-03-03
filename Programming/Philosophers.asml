@@ -1,0 +1,60 @@
+const numPhilosophers as Integer = 4
+const numForks as Integer = numPhilosophers
+
+structure Fork
+  index as Integer
+
+const philosophers as Set of Philosopher =
+  { new Philosopher(i) | i in [1..numPhilosophers] }
+
+const forks as Set of Fork = { Fork(i) | i in {1..numForks} }
+
+var holder as Map of Fork to Philosopher = { -> }
+
+enum State
+  Thinking
+  Hungry
+  HungryWithLeftFork
+  Eating
+
+class Philosopher
+  index as Integer
+  var status as State = Thinking
+  procedure move()
+    match status
+      Thinking : status := Hungry
+      Hungry   : if left(me) notin holder then
+                   holder(left(me)) := me
+                   status := HungryWithLeftFork
+      HungryWithLeftFork :
+                 if right(me) notin holder then
+                   holder(right(me)) := me
+                   status := Eating
+      Eating :   remove holder(left(me))
+                 remove holder(right(me))
+                 status := Thinking
+
+function left(p as Philosopher) as Fork
+  return Fork(p.index)
+
+function right(p as Philosopher) as Fork
+  return Fork(p.index mod numPhilosophers + 1)
+
+class Philosopher
+  function canMove() as Boolean
+    return status = Thinking
+       or (status = Hungry and left(me) notin holder)
+       or (status = HungryWithLeftFork and right(me) notin holder)
+       or (status = Eating)
+
+class Verification
+  shared function MakeMove(p as Philosopher)
+    require p.canMove()
+    p.move()
+  shared function IsDeadLock() as Boolean
+    return forall p in philosophers holds not p.canMove()
+  shared function AllEating() as Boolean
+    return forall p in philosophers holds p.status = Eating
+
+Main()
+  WriteLine("Hello Philosophers!")
